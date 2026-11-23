@@ -1,15 +1,22 @@
 <div align="center">
 
+### 🌐 **Live site: [vinuthan01.github.io/GOAT_ASCII](https://vinuthan01.github.io/GOAT_ASCII/)**
+
 # GOAT ASCII
 
 **Every pixel gets a letter.**
 Turn photos, videos and your webcam into live, full-color ASCII art. Runs 100% in your browser.
 
-[Live demo](https://vinuthan01.github.io/GOAT_ASCII/) · [Report a bug](../../issues) · [MIT License](LICENSE)
+[**Open the live site**](https://vinuthan01.github.io/GOAT_ASCII/) · [Report a bug](../../issues) · [MIT License](LICENSE)
 
 ![GOAT ASCII demo](assets/demo.gif)
 
 </div>
+
+## Try it in 10 seconds
+1. Open **https://vinuthan01.github.io/GOAT_ASCII/**
+2. Click one of the three sample tiles, or drop in your own photo or video (or press **Use webcam**).
+3. Move the slider to compare, scroll to zoom, and press **Export** to save your art.
 
 ## Features
 - **Photo, video and webcam** to live ASCII, keeping the original colors (default)
@@ -48,6 +55,8 @@ The site is static (no build step) and runs on GitHub Pages at `https://vinuthan
 | `←` `→` | Seek 5s (or move the compare line) |
 | `↑` `↓` | More / less detail |
 | `B` `S` `T` `E` `F` | Compare, style, tune panel, export menu, full screen |
+| `+` `-` `0` | Zoom in, zoom out, reset zoom (the mouse wheel also zooms) |
+| Click the picture | Play / pause (the controls hide while a video plays) |
 | `Esc` | Close panels |
 
 ## Tests
@@ -55,7 +64,12 @@ The site is static (no build step) and runs on GitHub Pages at `https://vinuthan
 pip install playwright && playwright install chromium
 python tests/smoke.py
 ```
-The same test runs on every push through GitHub Actions.
+
+## Tips
+- For sharper close-ups, raise the **Detail** slider, then zoom in.
+- **Black on white** looks cleanest on photos with a dark background. If a bright photo looks too dense, turn on **Invert** in Tune.
+- On a slower laptop or phone, lower Detail for smoother video.
+- After an update, hard refresh (Ctrl+Shift+R) once so the browser drops its cached copy.
 
 ## Notes
 - Video export records in real time, so a 1-minute video takes 1 minute.
