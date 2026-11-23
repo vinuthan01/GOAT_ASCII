@@ -1,0 +1,46 @@
+"""Loads the site, opens a sample, checks back button, tune panel and text export."""
+import http.server, threading, os, functools, sys
+from playwright.sync_api import sync_playwright
+root = os.path.join(os.path.dirname(__file__), "..")
+srv = http.server.ThreadingHTTPServer(("127.0.0.1", 0), functools.partial(http.server.SimpleHTTPRequestHandler, directory=root))
+threading.Thread(target=srv.serve_forever, daemon=True).start()
+url = f"http://127.0.0.1:{srv.server_address[1]}/index.html"
+errors, ok = [], True
+def check(name, cond):
+    global ok; ok &= bool(cond); print(("PASS " if cond else "FAIL ") + name)
+with sync_playwright() as p:
+    b = p.chromium.launch(channel="chrome", args=["--use-fake-device-for-media-stream", "--use-fake-ui-for-media-stream"])
+    ctx = b.new_context(permissions=["camera", "clipboard-read", "clipboard-write"]); pg = ctx.new_page()
+    pg.on("pageerror", lambda e: errors.append(str(e)))
+    pg.goto(url); pg.wait_for_timeout(800)
+    check("three sample tiles show moving previews", pg.eval_on_selector_all(".thumb video", "v=>v.length") == 3)
+    pg.click("[data-theme-pick=phosphor]"); check("colour theme switches", pg.evaluate("document.documentElement.dataset.theme") == "phosphor")
+    pg.click("[data-sample=butterfly]"); pg.wait_for_timeout(2500)
+    check("sample opens and loading screen hides", not pg.eval_on_selector("#viewer", "e=>e.hidden") and pg.eval_on_selector("#status", "e=>e.hidden"))
+    check("compare turns on for samples", pg.get_attribute("#compare-btn", "aria-pressed") == "true")
+    pg.click("#zoom-in"); check("zoom button magnifies the view", float(pg.evaluate("document.getElementById('viewer').style.getPropertyValue('--zs')")) > 1); pg.click("#zoom-lvl")
+    pg.click("#tune-btn"); pg.select_option("#chars", "blocks"); pg.click("#tune-btn"); pg.wait_for_timeout(300)
+    pg.click("#export-button")
+    with pg.expect_download() as dl: pg.click("[data-text=txt]")
+    txt = open(dl.value.path(), encoding="utf-8").read()
+    check("text export uses the chosen block characters", len(txt) > 100 and any(c in txt for c in "░▒▓█"))
+    pg.click("#export-button")
+    with pg.expect_download() as d2: pg.click("[data-export=png]")
+    check("PNG export downloads", d2.value.suggested_filename.endswith(".png"))
+    pg.evaluate("history.back()"); pg.wait_for_timeout(800)
+    check("browser back returns home", not pg.eval_on_selector("#landing", "e=>e.hidden"))
+    pg.click("#webcam-btn"); pg.wait_for_timeout(2000)
+    check("webcam starts", not pg.eval_on_selector("#viewer", "e=>e.hidden") and pg.eval_on_selector("#status", "e=>e.hidden"))
+    pg.reload(); pg.wait_for_timeout(500); pg.click("[data-sample=samurai]"); pg.wait_for_timeout(2000)
+    check("settings are remembered", pg.input_value("#chars") == "blocks")
+    wide = b.new_page(viewport={"width": 1600, "height": 900}); wide.goto(url); wide.wait_for_timeout(800)
+    check("side index shows four sections on wide screens", wide.eval_on_selector_all(".sidx a", "a=>a.length") == 4 and wide.is_visible(".sidx"))
+    wide.click(".sidx a[data-s=how]"); wide.wait_for_timeout(1500)
+    check("side index highlights the active section", wide.evaluate("document.querySelector('.sidx a.on')?.dataset.s") == "how")
+    wide.close()
+    narrow = b.new_page(viewport={"width": 390, "height": 844}); narrow.goto(url); narrow.wait_for_timeout(500)
+    check("side furniture hidden on mobile", not narrow.is_visible(".sidx") and not narrow.is_visible(".rail"))
+    narrow.close()
+    b.close()
+check("no script errors", not errors); print(errors) if errors else None
+sys.exit(0 if ok else 1)
